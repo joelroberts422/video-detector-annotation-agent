@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import VideoUploader from './components/VideoUploader';
 import VideoItem from './components/VideoItem';
 import VideoPlayer from './components/VideoPlayer';
+import DetectionPlayer from './components/DetectionPlayer';
 import { ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 
 function App() {
   const [videos, setVideos] = useState([]);
   const [serverVideos, setServerVideos] = useState([]);
   const [currentVideo, setCurrentVideo] = useState(null);
+  const [currentDetections, setCurrentDetections] = useState(null);
+  const [currentFrame, setCurrentFrame] = useState(0);
   const [loading, setLoading] = useState({});
   
   // Fetch videos from server when component mounts and after uploads
@@ -67,6 +70,7 @@ function App() {
   
   const handlePlayVideo = (video) => {
     setCurrentVideo(video);
+    setCurrentDetections(null); // Clear detections when just playing the video
   };
   
   const handlePlayServerVideo = (video) => {
@@ -92,6 +96,7 @@ function App() {
   
   const handleClosePlayer = () => {
     setCurrentVideo(null);
+    setCurrentDetections(null); // Also clear detections when closing the player
   };
   
   const processVideoWithModel = async (videoName) => {
@@ -147,6 +152,51 @@ function App() {
     }
   };
 
+  const handleViewDetections = async (video) => {
+    try {
+      setLoading(prev => ({ ...prev, [video.id]: 'loading-detections' }));
+      
+      // Get the video name
+      const videoName = video.name;
+      
+      // Load detection data
+      const response = await fetch(`/api/detections/${videoName}`);
+      if (!response.ok) {
+        throw new Error('Failed to load detections');
+      }
+      
+      const detectionData = await response.json();
+      
+      // Set the current video and its detections, but DON'T open the video player popup
+      setCurrentVideo({...video, showInPlayer: false}); // Add a flag to indicate this should show in DetectionPlayer
+      setCurrentDetections(detectionData);
+      setCurrentFrame(0);
+      
+      setLoading(prev => ({ ...prev, [video.id]: 'detections-loaded' }));
+    } catch (error) {
+      console.error('Error loading detections:', error);
+      setLoading(prev => ({ ...prev, [video.id]: 'error' }));
+      alert(`Error loading detections: ${error.message}`);
+    }
+  };
+
+  const handleLoadDetections = async (videoName) => {
+    try {
+      const response = await fetch(`/api/detections/${videoName}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load detections');
+      }
+
+      const data = await response.json();
+      setCurrentDetections(data.detections);
+      setCurrentFrame(0);
+    } catch (error) {
+      console.error('Error loading detections:', error);
+      alert(`Error loading detections: ${error.message}`);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -201,6 +251,16 @@ function App() {
                       >
                         Process
                       </button>
+                      <button 
+                        onClick={() => handleViewDetections({
+                          id: video.name,
+                          name: video.name,
+                          url: video.path
+                        })}
+                        className="btn btn-secondary py-1 px-2 text-xs"
+                      >
+                        View Detections
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -220,25 +280,39 @@ function App() {
                   onPlay={handlePlayVideo}
                   onRemove={handleRemoveVideo}
                   onLoadToModel={handleLoadToModel}
+                  onViewDetections={handleViewDetections}
+                  loading={loading}
                 />
               ))}
             </div>
           </div>
         )}
         
-        {currentVideo && (
+        {currentVideo && !currentDetections && (
           <VideoPlayer
             video={currentVideo}
             onClose={handleClosePlayer}
           />
         )}
       </div>
-    </div>
-  );
+      {currentVideo && currentDetections && (
+        <div className="mt-8 card">
+          <h2 className="text-xl font-semibold p-4 border-b">Detection Viewer</h2>
+          <DetectionPlayer
+            video={currentVideo}
+            detections={currentDetections}
+            currentFrame={currentFrame}
+            setCurrentFrame={setCurrentFrame}
+            onClose={() => {
+              setCurrentDetections(null); 
+              // Optionally also clear currentVideo if you want to fully reset the state
+              // setCurrentVideo(null);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
 
 export default App;
