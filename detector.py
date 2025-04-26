@@ -70,12 +70,5 @@ def process_video(video_name: str):
             sink.append(detections=detections, custom_data={"frame_index": i})
             total_detections = sv.Detections.merge([total_detections, detections])
 
-    # dataset_name = video_name.split('.')[0] + '.json'
-    # output_path = os.path.join(DATASETS_FOLDER, dataset_name)
-
-    # with sv.JSONSink(output_path) as sink:
-    #     sink.append(detections=total_detections)
-    # # with open(output_path, 'w') as f:
-    # #     json.dump(total_detections.to_json(), f)
     cap.release()
     print(f"Processed video {video_name} and saved detections to {video_name.split('.')[0]}.json")
