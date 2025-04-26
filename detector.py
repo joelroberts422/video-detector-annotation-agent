@@ -11,6 +11,12 @@ import json
 from scipy.interpolate import splrep, splev, splder, splprep
 import math
 
+<<<<<<< HEAD
+VIDEO_FOLDER = os.getenv('VIDEO_FOLDER')
+DATASETS_FOLDER = os.getenv('DATASETS_FOLDER')
+CONSTANT_VIDEO_WIDTH = 1920
+
+=======
 
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
@@ -19,6 +25,7 @@ CONSTANT_VIDEO_WIDTH = 1920
 os.makedirs(VIDEO_FOLDER, exist_ok=True)
 os.makedirs(DATASETS_FOLDER, exist_ok=True)
 
+>>>>>>> b5bf8e679c938e015dcb00daa6217e98f28b3a74
 model = YOLO('yolov8s.pt')
 object_tracker = sv.ByteTrack()
 
@@ -31,8 +38,13 @@ def copy_file(source_path, destination_path):
     print(f"File copied from {source_path} to {destination_path}")
 
 def detect_frame(frame: np.ndarray, frame_index: int):
+<<<<<<< HEAD
+    resize_frame = sv.resize_image(frame, resolution_wh=(CONSTANT_VIDEO_WIDTH, CONSTANT_VIDEO_WIDTH), keep_aspect_ratio=True)
+    results = model(resize_frame, verbose=False)[0]
+=======
     # resize_frame = sv.resize_image(frame, resolution_wh=(CONSTANT_VIDEO_WIDTH, CONSTANT_VIDEO_WIDTH), keep_aspect_ratio=True)
     results = model(frame, verbose=False)[0]
+>>>>>>> b5bf8e679c938e015dcb00daa6217e98f28b3a74
     detections = sv.Detections.from_ultralytics(results)
     detections = object_tracker.update_with_detections(detections=detections)
     detections.data["frame_index"] = np.full(len(detections), frame_index)
@@ -42,6 +54,12 @@ def detect_frame(frame: np.ndarray, frame_index: int):
         for xyxy, mask, confidence, class_id, tracker_id, data in detections
     ]
 
+<<<<<<< HEAD
+    out_frame = box_annotator.annotate(scene=resize_frame.copy(), detections=detections)
+    out_frame = trace_annotator.annotate(scene=out_frame, detections=detections)
+    out_frame = label_annotator.annotate(scene=out_frame, detections=detections, labels=labels)
+    return out_frame, detections
+=======
     # out_frame = box_annotator.annotate(scene=resize_frame.copy(), detections=detections)
     # out_frame = trace_annotator.annotate(scene=out_frame, detections=detections)
     # out_frame = label_annotator.annotate(scene=out_frame, detections=detections, labels=labels)
@@ -79,3 +97,4 @@ def process_video(video_name: str):
     # #     json.dump(total_detections.to_json(), f)
     cap.release()
     print(f"Processed video {video_name} and saved detections to {video_name.split('.')[0]}.json")
+>>>>>>> b5bf8e679c938e015dcb00daa6217e98f28b3a74
