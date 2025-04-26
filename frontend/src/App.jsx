@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import VideoUploader from './components/VideoUploader';
 import VideoItem from './components/VideoItem';
 import VideoPlayer from './components/VideoPlayer';
@@ -6,14 +6,79 @@ import { ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 
 function App() {
   const [videos, setVideos] = useState([]);
+  const [serverVideos, setServerVideos] = useState([]);
   const [currentVideo, setCurrentVideo] = useState(null);
+  const [loading, setLoading] = useState({});
   
-  const handleVideoUpload = (video) => {
+  // Fetch videos from server when component mounts and after uploads
+  useEffect(() => {
+    fetchServerVideos();
+  }, []);
+  
+  const fetchServerVideos = async () => {
+    try {
+      const response = await fetch('/api/videos');
+      if (!response.ok) {
+        throw new Error('Failed to fetch videos from server');
+      }
+      const data = await response.json();
+      setServerVideos(data);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
+  
+  const uploadVideoToServer = async (videoFile) => {
+    const formData = new FormData();
+    formData.append('file', videoFile);
+    
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload video');
+      }
+      
+      // Refresh the server videos list after successful upload
+      fetchServerVideos();
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      throw error;
+    }
+  };
+  
+  const handleVideoUpload = async (video) => {
     setVideos(prevVideos => [...prevVideos, video]);
+    
+    try {
+      setLoading(prev => ({ ...prev, [video.id]: 'uploading' }));
+      await uploadVideoToServer(video.file);
+      setLoading(prev => ({ ...prev, [video.id]: 'uploaded' }));
+    } catch (error) {
+      setLoading(prev => ({ ...prev, [video.id]: 'error' }));
+      alert(`Error uploading video: ${error.message}`);
+    }
   };
   
   const handlePlayVideo = (video) => {
     setCurrentVideo(video);
+  };
+  
+  const handlePlayServerVideo = (video) => {
+    // Create a video object compatible with VideoPlayer
+    const videoObj = {
+      id: video.name,
+      name: video.name,
+      size: video.size,
+      url: video.path,
+      type: 'video/' + video.name.split('.').pop().toLowerCase()
+    };
+    setCurrentVideo(videoObj);
   };
   
   const handleRemoveVideo = (videoId) => {
@@ -29,9 +94,57 @@ function App() {
     setCurrentVideo(null);
   };
   
-  const handleLoadVideo = () => {
-    // This will be implemented in the next phase to connect to the YOLO model
-    alert('This feature will be implemented in the next phase to connect to the YOLO model');
+  const processVideoWithModel = async (videoName) => {
+    try {
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_name: videoName }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process video');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error processing video:', error);
+      throw error;
+    }
+  };
+  
+  const handleLoadToModel = async (video) => {
+    try {
+      setLoading(prev => ({ ...prev, [video.id]: 'processing' }));
+      
+      // Check if the video is already uploaded to the server
+      if (loading[video.id] !== 'uploaded' && loading[video.id] !== 'processing' && loading[video.id] !== 'processed') {
+        // Upload video first if not already uploaded
+        await uploadVideoToServer(video.file);
+      }
+      
+      // Process the video with the YOLO model
+      const result = await processVideoWithModel(video.name);
+      setLoading(prev => ({ ...prev, [video.id]: 'processed' }));
+      
+      alert(`Video processed successfully: ${result.message || 'JSON data generated'}`);
+    } catch (error) {
+      setLoading(prev => ({ ...prev, [video.id]: 'error' }));
+      alert(`Error processing video: ${error.message}`);
+    }
+  };
+  
+  const handleProcessServerVideo = async (videoName) => {
+    try {
+      // Process the video with the YOLO model
+      const result = await processVideoWithModel(videoName);
+      alert(`Video processed successfully: ${result.message || 'JSON data generated'}`);
+    } catch (error) {
+      alert(`Error processing video: ${error.message}`);
+    }
   };
 
   return (
@@ -56,19 +169,43 @@ function App() {
           
           <div className="card p-6 hover:shadow-md transition-shadow">
             <h2 className="text-xl font-semibold mb-4 flex items-center text-primary-700">
-              <span>Load to Model</span>
+              <span>Server Videos</span>
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              Send a video to the YOLO model for object detection and analysis
+              Videos available on the server for processing
             </p>
-            <button 
-              onClick={handleLoadVideo}
-              className="btn btn-primary w-full flex items-center justify-center"
-              disabled={videos.length === 0}
-            >
-              <ArrowRightCircleIcon className="h-5 w-5 mr-2" />
-              <span>Load Video to Model</span>
-            </button>
+            
+            {serverVideos.length === 0 ? (
+              <p className="text-center text-gray-500 italic py-8">No videos found on server</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {serverVideos.map((video) => (
+                  <div 
+                    key={video.name}
+                    className="card flex items-center justify-between p-3 hover:bg-gray-50"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{video.name}</p>
+                      <p className="text-xs text-gray-500">{(video.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handlePlayServerVideo(video)}
+                        className="btn btn-primary py-1 px-2 text-xs"
+                      >
+                        Play
+                      </button>
+                      <button 
+                        onClick={() => handleProcessServerVideo(video.name)}
+                        className="btn btn-success py-1 px-2 text-xs"
+                      >
+                        Process
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         
@@ -82,6 +219,7 @@ function App() {
                   video={video}
                   onPlay={handlePlayVideo}
                   onRemove={handleRemoveVideo}
+                  onLoadToModel={handleLoadToModel}
                 />
               ))}
             </div>

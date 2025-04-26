@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, send_from_directory, request
 import os
-
+from detector import process_video
 
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
@@ -19,6 +19,25 @@ def serve_index():
 def test():
     return jsonify({"message": "Test endpoint!"})
 
+@app.route('/api/videos', methods=['GET'])
+def get_videos():
+    videos = []
+    for filename in os.listdir(VIDEO_FOLDER):
+        if os.path.isfile(os.path.join(VIDEO_FOLDER, filename)) and any(filename.lower().endswith(ext) for ext in ['.mp4', '.avi', '.mov', '.webm']):
+            file_path = os.path.join(VIDEO_FOLDER, filename)
+            file_size = os.path.getsize(file_path)
+            videos.append({
+                'name': filename,
+                'size': file_size,
+                'path': f'/api/videos/{filename}'  # URL path to access the video
+            })
+    
+    return jsonify(videos)
+
+@app.route('/api/videos/<filename>', methods=['GET'])
+def serve_video(filename):
+    return send_from_directory(VIDEO_FOLDER, filename)
+
 # What worked last time
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -36,6 +55,36 @@ def upload_file():
         print(f'File saved to {file_path}')
         return jsonify({'message': 'File uploaded successfully'}), 200
 
+@app.route('/api/process', methods=['POST'])
+def process_video_endpoint():
+    data = request.json
+    if not data or 'video_name' not in data:
+        return jsonify({'error': 'No video name provided'}), 400
+    
+    video_name = data['video_name'].replace(' ', '_')
+    video_path = os.path.join(VIDEO_FOLDER, video_name)
+    
+    if not os.path.exists(video_path):
+        return jsonify({'error': f'Video file {video_name} not found'}), 404
+    
+    try:
+        # Process the video using the detector.py module
+        process_video(video_name)
+        
+        # Get the JSON output file path
+        json_name = video_name.split('.')[0] + '.json'
+        json_path = os.path.join(DATASETS_FOLDER, json_name)
+        
+        if os.path.exists(json_path):
+            return jsonify({
+                'message': 'Video processed successfully',
+                'video_name': video_name,
+                'json_file': json_name
+            }), 200
+        else:
+            return jsonify({'error': 'JSON file was not generated'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Error processing video: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
