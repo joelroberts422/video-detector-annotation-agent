@@ -56,22 +56,26 @@ def process_video(video_name: str):
     total_detections = sv.Detections.empty()
 
 
+    with sv.JSONSink(os.path.join(DATASETS_FOLDER, video_name.split('.')[0] + '.json')) as sink:
+        for i in tqdm(range(length)):
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-    for i in tqdm(range(length)):
-        ret, frame = cap.read()
-        if not ret:
-            break
+            results = model(frame, verbose=False)[0]
+            detections = sv.Detections.from_ultralytics(results)
+            detections = object_tracker.update_with_detections(detections=detections)
+            detections.data["frame_index"] = np.full(len(detections), i)
 
-        results = model(frame, verbose=False)[0]
-        detections = sv.Detections.from_ultralytics(results)
-        detections = object_tracker.update_with_detections(detections=detections)
-        detections.data["frame_index"] = np.full(len(detections), i)
+            sink.append(detections=detections, custom_data={"frame_index": i})
+            total_detections = sv.Detections.merge([total_detections, detections])
 
-        total_detections = sv.Detections.merge([total_detections, detections])
+    # dataset_name = video_name.split('.')[0] + '.json'
+    # output_path = os.path.join(DATASETS_FOLDER, dataset_name)
 
-    dataset_name = video_name.split('.')[0] + '.json'
-    output_path = os.path.join(DATASETS_FOLDER, dataset_name)
-    with open(output_path, 'w') as f:
-        json.dump(total_detections.to_json(), f)
+    # with sv.JSONSink(output_path) as sink:
+    #     sink.append(detections=total_detections)
+    # # with open(output_path, 'w') as f:
+    # #     json.dump(total_detections.to_json(), f)
     cap.release()
     print(f"Processed video {video_name} and saved detections to {video_name.split('.')[0]}.json")
