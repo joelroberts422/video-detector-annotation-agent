@@ -5,11 +5,6 @@ import numpy as np
 import shutil
 from tqdm import tqdm
 import cv2
-import pandas as pd
-import subprocess
-import json
-from scipy.interpolate import splrep, splev, splder, splprep
-import math
 
 
 VIDEO_FOLDER = 'videos'
