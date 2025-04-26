@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, send_from_directory, request
 import os
 from detector import process_video
-from chat_client import annotate_with_agent
-
+from LLM.agents import annotate_with_agent
+import pandas as pd
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
 os.makedirs(VIDEO_FOLDER, exist_ok=True)
@@ -55,6 +55,19 @@ def upload_file():
         file.save(file_path)
         print(f'File saved to {file_path}')
         return jsonify({'message': 'File uploaded successfully'}), 200
+    
+@app.route("/api/annotate", methods=['POST'])
+async def annotate():
+    data = request.json
+    fileName = data.fileName
+    prompt = data.prompt
+    try:
+        file = pd.read_json("./datasets/{fileName}.json")
+        answer = annotate_with_agent(prompt+file)
+    except Exception as e:
+        print("Something went wrong {e}")
+
+    return PromptResponse(answer=answer)
 
 @app.route('/api/process', methods=['POST'])
 def process_video_endpoint():
