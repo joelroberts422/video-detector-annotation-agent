@@ -60,19 +60,40 @@ def upload_file():
         return jsonify({'message': 'File uploaded successfully'}), 200
     
 @app.route("/api/annotate", methods=['POST'])
-async def annotate():
-    # data = request.json
+@app.route("/api/annotate", methods=["POST"])
+def annotate():
+    # 1. Parse JSON body
+    data = request.get_json(force=True)
+    prompt = data.get("prompt", "")
+    filename = data.get("filename")
+
+    # 2. If they provided a filename, load its JSON and append to prompt
+    combined_input = prompt
+    if filename:
+        try:
+            df_file = pd.read_json(f"./datasets/{filename}.json", orient="records")
+            # merge the annotations into the input prompt however you prefer
+            combined_input += "\nExisting data:\n" + df_file.to_json(orient="records")
+        except Exception as e:
+            return jsonify({"error": f"Could not load '{filename}.json': {e}"}), 400
+
+    # 3. Run the agent
+    try:
+        answer = annotate_with_agent(combined_input)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # 4. Turn the agent’s output into a DataFrame, then list-of-dicts
+    try:
+        df_answer = pd.DataFrame(answer)
+        records = df_answer.to_dict(orient="records")
+    except Exception:
+        # if `answer` wasn’t list-of-dicts, just wrap it
+        records = [answer]
+
+    # 5. Return the records as JSON
+    return jsonify(records)
     
-    # fileName = data.fileName
-    # prompt = data.prompt
-    # try:
-        # file = pd.read_json("./datasets/{fileName}.json")
-    answer = annotate_with_agent("Hello")
-    # except Exception as e:
-    #     print("Something went wrong {e}")
-
-    return jsonify({"message":"{answer}"})
-
 @app.route('/api/process', methods=['POST'])
 def process_video_endpoint():
     data = request.json
