@@ -79,10 +79,11 @@ annotation_agent = create_react_agent(
     llm=llm,
     tools=[get_tool, update_tool, delete_tool, undo_tool],
     prompt=prompt,)
+
 chain = prompt | annotation_agent
 
 def annotate_with_agent(question: str) -> str:
-    return annotation_agent.run(question)
+    return annotation_agent.invoke({"question": question})
 
 # while True:
 #     print("\n\n-------------------------------")
