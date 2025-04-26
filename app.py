@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, send_from_directory, request
 import os
 from detector import process_video
+from chat_client import annotate_with_agent
 
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
