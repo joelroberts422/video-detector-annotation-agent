@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,6 +31,8 @@
   }
 }
 
+=======
+>>>>>>> b5bf8e679c938e015dcb00daa6217e98f28b3a74
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
