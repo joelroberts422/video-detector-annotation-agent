@@ -30,23 +30,6 @@ def copy_file(source_path, destination_path):
     shutil.copy(source_path, destination_path)
     print(f"File copied from {source_path} to {destination_path}")
 
-def detect_frame(frame: np.ndarray, frame_index: int):
-    # resize_frame = sv.resize_image(frame, resolution_wh=(CONSTANT_VIDEO_WIDTH, CONSTANT_VIDEO_WIDTH), keep_aspect_ratio=True)
-    results = model(frame, verbose=False)[0]
-    detections = sv.Detections.from_ultralytics(results)
-    detections = object_tracker.update_with_detections(detections=detections)
-    detections.data["frame_index"] = np.full(len(detections), frame_index)
-
-    labels = [
-        f"#{tracker_id} {model.model.names[class_id]} {confidence:.2f}"
-        for xyxy, mask, confidence, class_id, tracker_id, data in detections
-    ]
-
-    # out_frame = box_annotator.annotate(scene=resize_frame.copy(), detections=detections)
-    # out_frame = trace_annotator.annotate(scene=out_frame, detections=detections)
-    # out_frame = label_annotator.annotate(scene=out_frame, detections=detections, labels=labels)
-    return detections
-
 def process_video(video_name: str):
 
     # ffmpeg reencode video, assume frames = fps * length
