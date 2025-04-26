@@ -3,7 +3,7 @@ import os
 from detector import process_video
 import json
 import cv2
-# from chat_client import annotate_with_agent
+from chat_client import annotate_with_agent
 
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
