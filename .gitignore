@@ -4,3 +4,12 @@ videos/
 datasets/
 
 .DS_Store
+
+# Ignore videos and datasets
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# Ignore model files
+*.pt
