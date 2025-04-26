@@ -35,7 +35,7 @@ Answer the question as best you can. You have access to the following tools:
 
 Use this format:
 Question: {question}
-Thought: you should always think about what to do
+Thought: {agent_scratchpad}
 Action: the action to take, should be one of [{tool_names}]
 Action Input: the input to the action
 Observation: the result of the action
@@ -79,10 +79,11 @@ annotation_agent = create_react_agent(
     llm=llm,
     tools=[get_tool, update_tool, delete_tool, undo_tool],
     prompt=prompt,)
+
 chain = prompt | annotation_agent
 
 def annotate_with_agent(question: str) -> str:
-    return annotation_agent.run(question)
+    return annotation_agent.invoke({"question": question})
 
 # while True:
 #     print("\n\n-------------------------------")
