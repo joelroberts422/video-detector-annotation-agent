@@ -35,7 +35,7 @@ Answer the question as best you can. You have access to the following tools:
 
 Use this format:
 Question: {question}
-Thought: you should always think about what to do
+Thought: {agent_scratchpad}
 Action: the action to take, should be one of [{tool_names}]
 Action Input: the input to the action
 Observation: the result of the action

@@ -67,7 +67,7 @@ async def annotate():
     except Exception as e:
         print("Something went wrong {e}")
 
-    return PromptResponse(answer=answer)
+    return jsonify({"message":"{answer}"})
 
 @app.route('/api/process', methods=['POST'])
 def process_video_endpoint():
