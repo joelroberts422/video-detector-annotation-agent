@@ -1,4 +1,4 @@
-import { PlayIcon, ArrowRightCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, ArrowRightCircleIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/solid';
 
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
@@ -10,7 +10,7 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const VideoItem = ({ video, onPlay, onRemove, onLoadToModel }) => {
+const VideoItem = ({ video, onPlay, onRemove, onLoadToModel, onViewDetections, loading = {} }) => {
   return (
     <div className="card flex items-center justify-between p-4 mb-3 group hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-center">
@@ -46,6 +46,15 @@ const VideoItem = ({ video, onPlay, onRemove, onLoadToModel }) => {
         >
           <ArrowRightCircleIcon className="h-4 w-4 mr-1" />
           <span>Load to Model</span>
+        </button>
+        
+        <button 
+          onClick={() => onViewDetections(video)}
+          className="btn btn-secondary py-1.5 px-3 flex items-center"
+          disabled={loading[video.id] === 'loading-detections'}
+        >
+          <EyeIcon className="h-4 w-4 mr-1" />
+          <span>{loading[video.id] === 'loading-detections' ? 'Loading...' : 'View Detections'}</span>
         </button>
       </div>
     </div>
