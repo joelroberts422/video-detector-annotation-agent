@@ -3,6 +3,9 @@ import os
 from detector import process_video
 from LLM.agents import annotate_with_agent
 import pandas as pd
+import json
+import cv2
+
 VIDEO_FOLDER = 'videos'
 DATASETS_FOLDER = 'datasets'
 os.makedirs(VIDEO_FOLDER, exist_ok=True)
@@ -100,6 +103,41 @@ def process_video_endpoint():
             return jsonify({'error': 'JSON file was not generated'}), 500
     except Exception as e:
         return jsonify({'error': f'Error processing video: {str(e)}'}), 500
+    
+@app.route('/api/detections/<filename>', methods=['GET'])
+def get_detections(filename):
+    # Remove file extension if present and add .json
+    base_name = os.path.splitext(filename)[0]
+    json_path = os.path.join(DATASETS_FOLDER, f"{base_name}.json")
+    
+    if not os.path.exists(json_path):
+        return jsonify({'error': f'Detection file for {filename} not found'}), 404
+    
+    try:
+        with open(json_path, 'r') as f:
+            detections = json.load(f)
+            
+        # Get video metadata (fps, dimensions)
+        video_path = os.path.join(VIDEO_FOLDER, filename)
+        video_info = {}
+        
+        if os.path.exists(video_path):
+            cap = cv2.VideoCapture(video_path)
+            video_info = {
+                'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                'fps': cap.get(cv2.CAP_PROP_FPS),
+                'total_frames': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+                'duration': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) / cap.get(cv2.CAP_PROP_FPS)
+            }
+            cap.release()
+        
+        return jsonify({
+            'video_info': video_info,
+            'detections': detections
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Error reading detection file: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
