@@ -1,4 +1,4 @@
-import { PlayIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, ArrowRightCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
@@ -10,7 +10,7 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const VideoItem = ({ video, onPlay, onRemove }) => {
+const VideoItem = ({ video, onPlay, onRemove, onLoadToModel }) => {
   return (
     <div className="card flex items-center justify-between p-4 mb-3 group hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-center">
@@ -23,7 +23,15 @@ const VideoItem = ({ video, onPlay, onRemove }) => {
         </div>
       </div>
       
-      <div className="flex space-x-2">
+      <div className="flex space-x-2 items-center">
+        <button
+          onClick={() => onRemove(video.id)}
+          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+          aria-label="Remove video"
+        >
+          <XMarkIcon className="h-5 w-5" />
+        </button>
+        
         <button
           onClick={() => onPlay(video)}
           className="btn btn-primary py-1.5 px-3 flex items-center"
@@ -33,15 +41,15 @@ const VideoItem = ({ video, onPlay, onRemove }) => {
         </button>
         
         <button
-          onClick={() => onRemove(video.id)}
-          className="btn btn-danger py-1.5 px-3 flex items-center"
+          onClick={() => onLoadToModel(video)}
+          className="btn btn-success py-1.5 px-3 flex items-center"
         >
-          <TrashIcon className="h-4 w-4 mr-1" />
-          <span>Remove</span>
+          <ArrowRightCircleIcon className="h-4 w-4 mr-1" />
+          <span>Load to Model</span>
         </button>
       </div>
     </div>
   );
 };
 
-export default VideoItem; 
+export default VideoItem;

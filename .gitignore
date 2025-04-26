@@ -1,4 +1,16 @@
 venv/
 __pycache__/
-.DS_Store
+videos/
+datasets/
 .env
+
+.DS_Store
+
+# Ignore videos and datasets
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# Ignore model files
+*.pt
